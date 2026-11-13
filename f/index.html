@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tGA+emh9gJOHO3JjsIEhOSlx/PzX+LskCEGKnQ3CqpQ='; style-src 'unsafe-inline'; connect-src https://fzafnoaqlfsbpzfeqpks.supabase.co http://127.0.0.1:54321; img-src data:; base-uri 'none'; form-action 'none'">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#0E131D">
 <title>Shared flight · Roamfly</title>
@@ -99,7 +100,8 @@
   const DELAY_THRESHOLD = 15;
   const REFRESH_MS = 60 * 1000;
   const app = document.getElementById("app");
-  const token = decodeURIComponent(location.hash.slice(1));
+  // A malformed link ("%" not followed by hex) must not break the page: treat it as no token.
+  const token = (() => { try { return decodeURIComponent(location.hash.slice(1)); } catch { return ""; } })();
 
   // Local testing only: ?api=http://127.0.0.1:54321 when the page itself is served from localhost.
   function apiBase() {
@@ -110,11 +112,18 @@
 
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const d = (iso) => (iso ? new Date(iso) : null);
-  const time = (date, tz) => date ? new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit", timeZone: tz || undefined }).format(date) : "";
-  const day = (date, tz) => date ? new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric", timeZone: tz || undefined }).format(date) : "";
+  // A time zone the browser doesn't know would make Intl throw; fall back to the viewer's own zone.
+  const tzOK = new Map();
+  const safeTz = (tz) => {
+    if (!tz) return undefined;
+    if (!tzOK.has(tz)) { try { new Intl.DateTimeFormat("en-US", { timeZone: tz }); tzOK.set(tz, true); } catch { tzOK.set(tz, false); } }
+    return tzOK.get(tz) ? tz : undefined;
+  };
+  const time = (date, tz) => date ? new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit", timeZone: safeTz(tz) }).format(date) : "";
+  const day = (date, tz) => date ? new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric", timeZone: safeTz(tz) }).format(date) : "";
   const zone = (date, tz) => {
     if (!date) return "";
-    const part = new Intl.DateTimeFormat("en-US", { timeZoneName: "short", timeZone: tz || undefined }).formatToParts(date).find((p) => p.type === "timeZoneName");
+    const part = new Intl.DateTimeFormat("en-US", { timeZoneName: "short", timeZone: safeTz(tz) }).formatToParts(date).find((p) => p.type === "timeZoneName");
     return part ? part.value : "";
   };
   function duration(ms) {
@@ -207,7 +216,7 @@
     let dayNote = "";
     if (!dep && best) {
       const depBest = d(t.actualDeparture || t.estimatedDeparture || t.scheduledDeparture);
-      const ymd = (x, z) => new Intl.DateTimeFormat("en-CA", { timeZone: z || undefined }).format(x);
+      const ymd = (x, z) => new Intl.DateTimeFormat("en-CA", { timeZone: safeTz(z) }).format(x);
       const diffDays = Math.round((Date.parse(ymd(best, tz)) - Date.parse(ymd(depBest, f.origin.timeZone))) / 86400000);
       if (diffDays) dayNote = ` <span class="note" style="color:var(--accent)">${diffDays > 0 ? "+" : "−"}${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? "s" : ""}</span>`;
     }
@@ -262,12 +271,18 @@
       const res = await fetch(`${apiBase()}?t=${encodeURIComponent(token)}`, { credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer" });
       if (res.status === 404) { last = null; return message("This link is no longer active", "Sharing was turned off or the flight ended more than a day ago."); }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      last = await res.json();
-      render(last);
+      const fresh = await res.json();
+      if (safeRender(fresh)) { last = fresh; return; }
+      if (!last || !safeRender(last)) message("Can't show this flight", "Something in this flight's details couldn't be displayed. Try again in a minute.", true);
     } catch {
-      if (last) render(last); // keep the last good view; the next refresh retries
-      else message("Can't load this flight", "Check your connection and try again.", true);
+      // Network or server trouble: keep the last good view; the next refresh retries.
+      if (!last || !safeRender(last)) message("Can't load this flight", "Check your connection and try again.", true);
     }
+  }
+
+  /** Renders, or returns false instead of leaving a half-drawn or blank page. */
+  function safeRender(f) {
+    try { render(f); return true; } catch { return false; }
   }
   function schedule() {
     clearInterval(timer);
