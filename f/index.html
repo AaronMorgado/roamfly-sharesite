@@ -4,294 +4,50 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tGA+emh9gJOHO3JjsIEhOSlx/PzX+LskCEGKnQ3CqpQ='; style-src 'unsafe-inline'; connect-src https://fzafnoaqlfsbpzfeqpks.supabase.co http://127.0.0.1:54321; img-src data:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://fzafnoaqlfsbpzfeqpks.supabase.co http://127.0.0.1:54321; img-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#0E131D">
 <title>Shared flight · Roamfly</title>
-<style>
-  /* Roamfly shared flight page (UI refresh Part B, W3). One file: no framework, no analytics, no cookies. */
-  :root {
-    --bg: #0E131D; --surface: #171C26; --tile: #0A0E16; --text: #FFFFFF; --text2: #A3A8B2;
-    --accent: #FAA941; --ontime: #3DDC84; --late: #FF6B5E; --neutral: #3A4250; --stub: #626B7A;
-    --tone: var(--neutral); --tone-text: var(--text2);
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { -webkit-text-size-adjust: 100%; }
-  body {
-    background: var(--bg); color: var(--text); min-height: 100vh;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-    font-size: 1rem; line-height: 1.4; padding: max(1rem, env(safe-area-inset-top)) 1rem 2rem;
-  }
-  main { max-width: 34rem; margin: 0 auto; }
-  .tone-ontime { --tone: var(--ontime); --tone-text: var(--ontime); }
-  .tone-late { --tone: var(--late); --tone-text: var(--late); }
-  .tone-neutral { --tone: var(--neutral); --tone-text: var(--text2); }
-  .brand { display: flex; align-items: center; gap: .5rem; color: var(--text2); font-size: .8125rem; font-weight: 600; margin-bottom: 1.25rem; }
-  .brand svg { width: 1.25rem; height: 1.25rem; }
-  .card {
-    position: relative; background: var(--surface); border-radius: 1.25rem; padding: 1.25rem 1.25rem 1.25rem 1.5rem;
-    overflow: hidden;
-  }
-  .card::before { /* status rail */
-    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--tone);
-    transition: background-color .4s ease;
-  }
-  .context { color: var(--text2); font-size: .875rem; }
-  h1 { font-size: 1.625rem; line-height: 1.2; margin: .15rem 0 .9rem; }
-  .phase { color: var(--tone-text); font-size: .6875rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
-  .headline { font-size: 1.875rem; font-weight: 700; line-height: 1.15; margin: .15rem 0 .2rem; font-variant-numeric: tabular-nums; }
-  .headline .value { color: var(--tone-text); }
-  .status { color: var(--tone-text); font-weight: 600; font-size: .9375rem; }
-  .track { margin: 1.4rem 0 .4rem; position: relative; }
-  .track svg { display: block; width: 100%; height: 1.5rem; overflow: visible; }
-  .track .caps { display: grid; grid-template-columns: repeat(4, 1fr); text-align: center; font-size: .75rem; color: var(--text2); font-variant-numeric: tabular-nums; margin-top: .3rem; }
-  .track .caps .on { color: var(--text); }
-  .plane { position: absolute; top: 0; width: 1.5rem; height: 1.5rem; transform: translateX(-50%); }
-  .plane svg { width: 100%; height: 100%; }
-  .times { margin-top: 1.25rem; display: grid; gap: 1rem; }
-  .leg { display: grid; gap: .45rem; }
-  .leg + .leg { border-top: 1px solid rgba(255,255,255,.06); padding-top: 1rem; }
-  .label { color: var(--text2); font-size: .6875rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
-  .row { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
-  .tile { /* departure-board split line drawn behind the digits, as in the app */
-    background: linear-gradient(to bottom, var(--tile) calc(50% - .5px), rgba(0,0,0,.35) calc(50% - .5px),
-      rgba(0,0,0,.35) calc(50% + .5px), var(--tile) calc(50% + .5px));
-    border-radius: .5rem; padding: .25rem .6rem; font-size: 1.5rem; font-weight: 600; font-variant-numeric: tabular-nums;
-  }
-  .tile.late { color: var(--late); }
-  .was { color: var(--text2); text-decoration: line-through; font-variant-numeric: tabular-nums; }
-  .note { font-size: .8125rem; color: var(--text2); }
-  .note b { font-weight: 600; }
-  .note .late { color: var(--late); } .note .early { color: var(--ontime); }
-  .chips { display: flex; flex-wrap: wrap; gap: .5rem; }
-  .chip { border: 1px dashed var(--stub); border-radius: .375rem; padding: .15rem .5rem; font-size: .8125rem; color: var(--text2); }
-  .chip b { color: var(--text); font-weight: 600; }
-  .belt { margin-top: 1rem; font-size: .9375rem; }
-  .updated { margin-top: 1rem; color: var(--text2); font-size: .8125rem; text-align: center; }
-  .message { text-align: center; padding: 2.5rem 1rem; }
-  .message h1 { margin-bottom: .5rem; }
-  .message p { color: var(--text2); }
-  button {
-    margin-top: 1.25rem; background: var(--accent); color: #1A1205; border: 0; border-radius: 999px;
-    font: inherit; font-weight: 600; padding: .75rem 1.5rem; min-height: 44px; cursor: pointer;
-  }
-  button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-  .skeleton { height: 1rem; border-radius: .25rem; background: rgba(255,255,255,.07); margin: .6rem 0; }
-  footer { margin-top: 2rem; text-align: center; font-size: .8125rem; }
-  footer a { color: var(--accent); text-decoration: none; display: inline-block; padding: .75rem; }
-  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
-</style>
+<!-- Link previews: generic on purpose. Networks never see the #token, so no flight details can leak here. -->
+<meta name="description" content="Follow this flight live: status, gates and times. No app needed.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Roamfly">
+<meta property="og:title" content="Track this flight live · Roamfly">
+<meta property="og:description" content="Follow this flight live: status, gates and times. No app needed.">
+<meta property="og:url" content="https://roamfly.app/f/">
+<meta property="og:image" content="https://roamfly.app/assets/og-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A Roamfly shared-flight card: Lisbon to New York, in the air, lands in about 2h 50m.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Track this flight live · Roamfly">
+<meta name="twitter:description" content="Follow this flight live: status, gates and times. No app needed.">
+<meta name="twitter:image" content="https://roamfly.app/assets/og-card.png">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="stylesheet" href="/assets/share-card.css">
 </head>
 <body>
 <main>
-  <div class="brand" aria-hidden="true">
-    <svg viewBox="0 0 24 24" fill="none"><path d="M3 18c4-9 10-12 18-12" stroke="#FAA941" stroke-width="2" stroke-linecap="round"/><circle cx="3" cy="18" r="1.6" fill="#FAA941"/></svg>
+  <a class="brand" href="/" aria-label="Roamfly home">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 18c4-9 10-12 18-12" stroke="#FAA941" stroke-width="2" stroke-linecap="round"/><circle cx="3" cy="18" r="1.6" fill="#FAA941"/></svg>
     Roamfly
-  </div>
+  </a>
   <p id="announce" class="sr-only" aria-live="polite"></p>
-  <div id="app" aria-busy="true"><div class="card"><p class="sr-only">Loading flight</p><div class="skeleton" style="width:45%"></div><div class="skeleton" style="width:70%;height:1.6rem"></div><div class="skeleton" style="width:90%"></div><div class="skeleton" style="width:60%"></div></div></div>
-  <footer><a href="https://roamfly.app">Track your own flights with Roamfly</a></footer>
+  <div id="app" aria-busy="true"><div class="card"><p class="sr-only">Loading flight</p><div class="skeleton w45"></div><div class="skeleton w70"></div><div class="skeleton w90"></div><div class="skeleton w60"></div></div></div>
+  <noscript><div class="card message tone-neutral"><h1>Turn on JavaScript</h1><p>This page needs JavaScript to load the flight.</p></div></noscript>
+  <section id="share-area" class="share" aria-labelledby="share-title" hidden>
+    <h2 id="share-title">Share this flight</h2>
+    <p class="privacy">Anyone with this link can see this flight's status.</p>
+    <div id="share-buttons"></div>
+  </section>
+  <footer>
+    <div class="download" data-download><span class="soon">Coming soon to the App Store</span></div>
+    <nav aria-label="Roamfly"><a href="/">Track your own flights with Roamfly</a></nav>
+  </footer>
 </main>
-<script>
-"use strict";
-(() => {
-  const PROD_API = "https://fzafnoaqlfsbpzfeqpks.supabase.co/functions/v1/shared-flight";
-  const DELAY_THRESHOLD = 15;
-  const REFRESH_MS = 60 * 1000;
-  const app = document.getElementById("app");
-  // A malformed link ("%" not followed by hex) must not break the page: treat it as no token.
-  const token = (() => { try { return decodeURIComponent(location.hash.slice(1)); } catch { return ""; } })();
-
-  // Local testing only: ?api=http://127.0.0.1:54321 when the page itself is served from localhost.
-  function apiBase() {
-    const local = location.hostname === "localhost" || location.hostname === "127.0.0.1";
-    const override = new URLSearchParams(location.search).get("api");
-    return local && override ? `${override.replace(/\/$/, "")}/functions/v1/shared-flight` : PROD_API;
-  }
-
-  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const d = (iso) => (iso ? new Date(iso) : null);
-  // A time zone the browser doesn't know would make Intl throw; fall back to the viewer's own zone.
-  const tzOK = new Map();
-  const safeTz = (tz) => {
-    if (!tz) return undefined;
-    if (!tzOK.has(tz)) { try { new Intl.DateTimeFormat("en-US", { timeZone: tz }); tzOK.set(tz, true); } catch { tzOK.set(tz, false); } }
-    return tzOK.get(tz) ? tz : undefined;
-  };
-  const time = (date, tz) => date ? new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit", timeZone: safeTz(tz) }).format(date) : "";
-  const day = (date, tz) => date ? new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric", timeZone: safeTz(tz) }).format(date) : "";
-  const zone = (date, tz) => {
-    if (!date) return "";
-    const part = new Intl.DateTimeFormat("en-US", { timeZoneName: "short", timeZone: safeTz(tz) }).formatToParts(date).find((p) => p.type === "timeZoneName");
-    return part ? part.value : "";
-  };
-  function duration(ms) {
-    const total = Math.max(0, Math.floor(ms / 60000)), dd = Math.floor(total / 1440), h = Math.floor((total % 1440) / 60), m = total % 60;
-    if (dd > 0) return h > 0 ? `${dd}d ${h}h` : `${dd}d`;
-    if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`;
-    return `${m}m`;
-  }
-  const spoken = (s) => s.replace(/\b(\d+)([dhm])\b/g, (_, n, u) => `${n} ${{ d: "day", h: "hour", m: "minute" }[u]}${n === "1" ? "" : "s"}`);
-  const flightNo = (s) => { const c = String(s || "").toUpperCase(); const m = c.match(/^([A-Z0-9]{2}[A-Z]?)(\d+)$/); return m && /\d/.test(c.slice(m[1].length)) ? `${m[1]} ${m[2]}` : c; };
-
-  /** Phase, headline, status line, tone and track: the same rules as the app (Countdown, StatusTone, PhaseTrackModel). */
-  function model(f, now) {
-    const t = Object.fromEntries(Object.entries(f.times).map(([k, v]) => [k, d(v)]));
-    const expDep = t.estimatedDeparture || t.scheduledDeparture;
-    const expArr = t.estimatedArrival || t.scheduledArrival;
-    const late = f.delayMinutes >= DELAY_THRESHOLD;
-    const statusLine = () => !f.live ? "Schedule only" : late ? `${duration(f.delayMinutes * 60000)} late` : f.status === "delayed" ? "Delayed" : "On time";
-    const tone = f.status === "cancelled" || f.status === "diverted" ? "late"
-      : f.status === "landed" || !f.live ? "neutral"
-      : late || f.status === "delayed" ? "late" : "ontime";
-    const third = 1 / 3;
-    const airFrac = () => {
-      const start = t.takeoffActual || t.takeoffEstimated || t.actualDeparture || expDep;
-      const end = t.landingActual || t.landingEstimated || t.landingScheduled || expArr;
-      if (!start || !end || end <= start) return .5;
-      return Math.min(1, Math.max(0, (now - start) / (end - start)));
-    };
-    const landsAt = t.landingEstimated || t.landingScheduled || expArr;
-
-    if (f.status === "cancelled") return { phase: "Cancelled", lead: "Cancelled", value: "", line: null, tone, progress: 0, reached: 0 };
-    if (f.status === "landed") {
-      if (t.actualArrival) {
-        const lateBy = t.scheduledArrival ? Math.round((t.actualArrival - t.scheduledArrival) / 60000) : f.delayMinutes;
-        return { phase: "Arrived", lead: "Landed", value: time(t.actualArrival, f.destination.timeZone),
-          line: `At the gate ${lateBy >= DELAY_THRESHOLD ? `${duration(lateBy * 60000)} late` : "on time"}`, tone, progress: 1, reached: 4 };
-      }
-      return { phase: "Landed", lead: "Landed", value: "", line: statusLine(), tone, progress: 5 / 6, reached: 3 };
-    }
-    if (!f.live) { // schedule only: three steps, like the app
-      if (now < t.scheduledDeparture) return { phase: "Upcoming", lead: "Departs in", value: duration(t.scheduledDeparture - now), line: "Schedule only", tone, progress: 0, reached: 0 };
-      if (t.scheduledArrival && now < t.scheduledArrival) return { phase: "In flight", lead: "Lands in about", value: duration(t.scheduledArrival - now), line: "Schedule only", tone, progress: .5, reached: 2 };
-      return { phase: "Completed", lead: "Completed", value: "", line: "Schedule only", tone, progress: 1, reached: 4 };
-    }
-    const airborne = f.status === "in_air" || f.status === "diverted" || (t.takeoffActual && t.takeoffActual <= now);
-    if (airborne || (t.actualDeparture && t.actualDeparture <= now)) {
-      const phase = f.status === "diverted" ? "Diverted" : airborne ? "In the air" : "Left the gate";
-      const left = landsAt ? landsAt - now : null;
-      return { phase, lead: left == null ? phase : left > 0 ? "Lands in" : "Landing now", value: left > 0 ? duration(left) : "",
-        line: statusLine(), tone, progress: airborne ? third + airFrac() * third : third / 2, reached: airborne ? 2 : 1 };
-    }
-    const until = expDep - now;
-    return { phase: f.status === "boarding" ? "Boarding" : "Upcoming", lead: until > 0 ? "Departs in" : "Departing now",
-      value: until > 0 ? duration(until) : "", line: statusLine(), tone, progress: 0, reached: 0 };
-  }
-
-  function track(f, m) {
-    const t = f.times, o = f.origin.timeZone, a = f.destination.timeZone;
-    const stops = [
-      [t.actualDeparture || t.estimatedDeparture || t.scheduledDeparture, o, "Gate", "Left the gate"],
-      [t.takeoffActual || t.takeoffEstimated || t.takeoffScheduled, o, "Takeoff", "took off"],
-      [t.landingActual || t.landingEstimated || t.landingScheduled, a, "Landing", "lands"],
-      [t.actualArrival || t.estimatedArrival || t.scheduledArrival, a, "Gate", "at the gate"],
-    ];
-    const fill = m.tone === "neutral" ? "var(--text2)" : "var(--tone-text)";
-    const x = (i) => 12.5 + i * 25; // % positions: centers of four columns
-    const px = 12.5 + m.progress * 75;
-    const dots = stops.map((_, i) => `<circle cx="${x(i)}%" cy="12" r="5" fill="${i < m.reached ? fill : "var(--surface)"}" stroke="${i < m.reached ? fill : "var(--neutral)"}" stroke-width="2"/>`).join("");
-    const plane = m.progress > 0 && m.progress < 1
-      ? `<span class="plane" style="left:${px}%"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="var(--surface)"/><path d="M4 12h15M14 6l5 6-5 6M7 8l2 4-2 4" stroke="${fill}" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` : "";
-    const caps = stops.map(([iso, tz, name], i) => `<span class="${i < m.reached ? "on" : ""}">${esc(iso ? time(d(iso), tz) : name)}</span>`).join("");
-    // Screen readers: "Left the gate 10:36, took off 10:52, lands 14:20, at the gate 14:30".
-    const sentence = stops.filter(([iso]) => iso).map(([iso, tz, , words]) => `${words} ${time(d(iso), tz)}`).join(", ");
-    const spokenSentence = sentence ? sentence[0].toUpperCase() + sentence.slice(1) : "";
-    return `<div class="track" role="img" aria-label="${esc(spokenSentence || m.phase)}">
-      <svg aria-hidden="true"><line x1="12.5%" y1="12" x2="87.5%" y2="12" stroke="var(--neutral)" stroke-width="3" stroke-linecap="round"/>
-      <line x1="12.5%" y1="12" x2="${px}%" y2="12" stroke="${fill}" stroke-width="3" stroke-linecap="round"/>${dots}</svg>${plane}
-      <div class="caps" aria-hidden="true">${caps}</div></div>`;
-  }
-
-  function leg(f, side) {
-    const dep = side === "dep", t = f.times, end = dep ? f.origin : f.destination, tz = end.timeZone;
-    const sched = d(dep ? t.scheduledDeparture : t.scheduledArrival);
-    const best = d(dep ? (t.actualDeparture || t.estimatedDeparture || t.scheduledDeparture) : (t.actualArrival || t.estimatedArrival || t.scheduledArrival));
-    const done = dep ? t.actualDeparture : t.actualArrival;
-    const label = !f.live || f.status === "cancelled" ? (dep ? "Departure" : "Arrival") : dep ? (done ? "Departed" : "Departs") : (done ? "Arrived" : "Arrives");
-    const diff = best && sched ? Math.round((best - sched) / 60000) : 0;
-    const moved = f.live && sched && best && Math.abs(best - sched) >= 60000;
-    const note = !f.live ? "" : diff >= DELAY_THRESHOLD ? `<b class="late">${duration(diff * 60000)} late</b> · ` : diff <= -5 ? `<b class="early">${duration(-diff * 60000)} early</b> · ` : "";
-    let dayNote = "";
-    if (!dep && best) {
-      const depBest = d(t.actualDeparture || t.estimatedDeparture || t.scheduledDeparture);
-      const ymd = (x, z) => new Intl.DateTimeFormat("en-CA", { timeZone: safeTz(z) }).format(x);
-      const diffDays = Math.round((Date.parse(ymd(best, tz)) - Date.parse(ymd(depBest, f.origin.timeZone))) / 86400000);
-      if (diffDays) dayNote = ` <span class="note" style="color:var(--accent)">${diffDays > 0 ? "+" : "−"}${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? "s" : ""}</span>`;
-    }
-    const gate = dep ? f.gate : f.arrivalGate, term = dep ? f.terminal : f.arrivalTerminal;
-    const chips = [term && `<span class="chip">Terminal <b>${esc(term)}</b></span>`, gate && `<span class="chip">Gate <b>${esc(gate)}</b></span>`].filter(Boolean).join("");
-    return `<div class="leg"><div class="label">${label} · ${esc([end.code, end.city].filter(Boolean).join(" "))}</div>
-      ${best ? `<div class="row"><span class="tile ${f.live && diff >= DELAY_THRESHOLD ? "late" : ""}">${esc(time(best, tz))}</span>${moved ? `<span class="was"><span class="sr-only">scheduled </span>${esc(time(sched, tz))}</span>` : ""}${dayNote}</div>
-      <div class="note">${note}${esc(day(best, tz))} · ${esc(zone(best, tz))}</div>` : `<div class="note">Time not published yet</div>`}
-      ${chips ? `<div class="chips">${chips}</div>` : ""}</div>`;
-  }
-
-  function render(f) {
-    const now = Date.now(), m = model(f, now);
-    app.setAttribute("aria-busy", "false");
-    announce(m);
-    const route = `${f.origin.city || f.origin.code || "—"} to ${f.destination.city || f.destination.code || "—"}`;
-    const who = f.ownerFirstName ? `${esc(f.ownerFirstName)} is sharing ${esc(flightNo(f.flightNumber))}` : `Shared flight ${esc(flightNo(f.flightNumber))}`;
-    const value = m.value ? ` <span class="value">${esc(m.value)}</span>` : "";
-    const updated = f.updatedAt ? `Updated ${new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(d(f.updatedAt))}` : "";
-    document.title = `${flightNo(f.flightNumber)} · ${m.lead}${m.value ? " " + m.value : ""} · Roamfly`;
-    app.innerHTML = `<article class="card tone-${m.tone}">
-      <p class="context">${who}</p>
-      <h1>${esc(route)}</h1>
-      <p class="phase">${esc(m.phase)}</p>
-      <p class="headline" aria-label="${esc(spoken(m.lead + (m.value ? " " + m.value : "")))}">${esc(m.lead)}${value}</p>
-      ${m.line ? `<p class="status" aria-label="${esc(spoken(m.line))}">${esc(m.line)}</p>` : ""}
-      ${track(f, m)}
-      <section class="times" aria-label="Times">${leg(f, "dep")}${leg(f, "arr")}</section>
-      ${f.baggageBelt ? `<p class="belt">Baggage belt <b>${esc(f.baggageBelt)}</b></p>` : ""}
-    </article>
-    <p class="updated">${!f.live ? "Live updates are off for this flight — showing the schedule. " : ""}${updated}</p>`;
-  }
-
-  function message(title, text, retry) {
-    document.title = "Roamfly";
-    app.innerHTML = `<div class="card message tone-neutral"><h1>${esc(title)}</h1><p>${esc(text)}</p>${retry ? '<button type="button" id="retry">Try again</button>' : ""}</div>`;
-    if (retry) document.getElementById("retry").addEventListener("click", load);
-  }
-
-  let last = null, timer = null, lastStatus = null;
-  // Screen readers: announce only real changes, not the whole card on every minute's refresh.
-  function announce(m) {
-    const key = `${m.phase}|${m.line || ""}`;
-    if (lastStatus !== null && key !== lastStatus) {
-      document.getElementById("announce").textContent = spoken(`Status update: ${m.phase}${m.line ? ", " + m.line : ""}`);
-    }
-    lastStatus = key;
-  }
-  async function load() {
-    if (!/^[A-Za-z0-9_-]{22,64}$/.test(token)) return message("This link is no longer active", "Ask for a new link to follow this flight.");
-    try {
-      const res = await fetch(`${apiBase()}?t=${encodeURIComponent(token)}`, { credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer" });
-      if (res.status === 404) { last = null; return message("This link is no longer active", "Sharing was turned off or the flight ended more than a day ago."); }
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const fresh = await res.json();
-      if (safeRender(fresh)) { last = fresh; return; }
-      if (!last || !safeRender(last)) message("Can't show this flight", "Something in this flight's details couldn't be displayed. Try again in a minute.", true);
-    } catch {
-      // Network or server trouble: keep the last good view; the next refresh retries.
-      if (!last || !safeRender(last)) message("Can't load this flight", "Check your connection and try again.", true);
-    }
-  }
-
-  /** Renders, or returns false instead of leaving a half-drawn or blank page. */
-  function safeRender(f) {
-    try { render(f); return true; } catch { return false; }
-  }
-  function schedule() {
-    clearInterval(timer);
-    if (document.visibilityState === "visible") timer = setInterval(load, REFRESH_MS);
-  }
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") load(); schedule(); });
-  window.addEventListener("hashchange", () => location.reload());
-  load(); schedule();
-})();
-</script>
+<script src="/assets/share-card.js"></script>
+<script src="/assets/share-buttons.js"></script>
+<script src="/assets/site.js"></script>
+<script src="/assets/f.js"></script>
 </body>
 </html>

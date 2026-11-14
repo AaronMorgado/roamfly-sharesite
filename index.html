@@ -2,23 +2,57 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="theme-color" content="#0E131D">
 <title>Roamfly — every flight, every airline</title>
-<style>
-  :root { color-scheme: dark; }
-  body { margin: 0; background: #0E131D; color: #FFFFFF; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.5; padding: 3rem 1rem; }
-  main { max-width: 34rem; margin: 0 auto; }
-  h1 { font-size: 2rem; margin: 0 0 .5rem; } h2 { font-size: 1.125rem; margin: 2rem 0 .5rem; }
-  p, li { color: #A3A8B2; } a { color: #FAA941; }
-  nav { margin-top: 2.5rem; display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: .9375rem; }
-</style>
+<meta name="description" content="Flight tracking for people who live on the move: every airline in one place, live gates and delays, and a link anyone can open to follow your flight.">
+<link rel="canonical" href="https://roamfly.app/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Roamfly">
+<meta property="og:title" content="Roamfly — every flight, every airline">
+<meta property="og:description" content="Every flight, every airline, one calm screen. Share any flight with a link.">
+<meta property="og:url" content="https://roamfly.app/">
+<meta property="og:image" content="https://roamfly.app/assets/og-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A Roamfly shared-flight card: Lisbon to New York, in the air, lands in about 2h 50m.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Roamfly — every flight, every airline">
+<meta name="twitter:description" content="Every flight, every airline, one calm screen. Share any flight with a link.">
+<meta name="twitter:image" content="https://roamfly.app/assets/og-card.png">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="stylesheet" href="/assets/share-card.css">
 </head>
 <body>
 <main>
-  <h1>Roamfly</h1>
-  <p>Flight tracking for people who live on the move: every airline in one place, live gates, delays and baggage belts, and alerts when anything changes. For iPhone.</p>
-  <nav><a href="/support.html">Support</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a></nav>
+  <header class="hero">
+    <h1>Roamfly</h1>
+    <p class="tagline">Every flight, every airline, one calm screen.</p>
+  </header>
+  <div class="download" data-download><span class="soon">Coming soon to the App Store</span></div>
+
+  <section class="pitch" aria-labelledby="pitch-title">
+    <h2 id="pitch-title">Share a flight with anyone</h2>
+    <p>Send a link. They see your flight live in their browser — no app needed.</p>
+  </section>
+  <div id="sample">
+    <noscript><img class="sample-static" src="/assets/sample-card.png" width="1088" height="1100" alt="Sample of a shared flight: Alex is sharing RF 204, Lisbon to New York, in the air, lands in 2 hours 50 minutes, on time."></noscript>
+  </div>
+
+  <section class="share" aria-labelledby="share-title">
+    <h2 id="share-title">Tell a friend</h2>
+    <div id="share-buttons"><p class="privacy">Share this address: <a href="https://roamfly.app/">roamfly.app</a></p></div>
+  </section>
+
+  <footer>
+    <nav aria-label="Legal and support"><a href="/support.html">Support</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a></nav>
+  </footer>
 </main>
+<script src="/assets/share-card.js"></script>
+<script src="/assets/sample-flight.js"></script>
+<script src="/assets/share-buttons.js"></script>
+<script src="/assets/site.js"></script>
+<script src="/assets/home.js"></script>
 </body>
 </html>

@@ -12,6 +12,10 @@
   h1 { font-size: 2rem; margin: 0 0 .5rem; } h2 { font-size: 1.125rem; margin: 2rem 0 .5rem; }
   p, li { color: #A3A8B2; } a { color: #FAA941; }
   nav { margin-top: 2.5rem; display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: .9375rem; }
+  .download { margin: 1.5rem 0 0; }
+  .download .soon, .download .button { display: inline-flex; align-items: center; min-height: 44px; padding: .75rem 1.5rem; border-radius: 999px; font-weight: 600; text-decoration: none; }
+  .download .soon { border: 1px solid #3A4250; color: #A3A8B2; }
+  .download .button { background: #FAA941; color: #1A1205; }
 </style>
 </head>
 <body>
@@ -26,7 +30,9 @@
     <li><strong>Sharing a flight.</strong> On a flight, tap Share flight and send the link. Anyone with it sees that flight's status until 24 hours after it lands; tap Stop sharing to turn it off sooner.</li>
     <li><strong>Deleting your account.</strong> Profile → Delete account removes your account and all your data.</li>
   </ul>
+  <div class="download" data-download><span class="soon">Coming soon to the App Store</span></div>
   <nav><a href="/">Roamfly</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a></nav>
 </main>
+<script src="/assets/site.js"></script>
 </body>
 </html>
