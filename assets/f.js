@@ -54,7 +54,7 @@
     if (!/^[A-Za-z0-9_-]{22,64}$/.test(token)) return message("This link is no longer active", "Ask for a new link to follow this flight.");
     try {
       const res = await fetch(`${apiBase()}?t=${encodeURIComponent(token)}`, { credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer" });
-      if (res.status === 404) { last = null; return message("This link is no longer active", "Sharing was turned off or the flight ended more than a day ago."); }
+      if (res.status === 404) { last = null; return message("This link is no longer active", "Sharing was turned off, or the flight landed more than 2 hours ago."); }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const fresh = await res.json();
       if (safeRender(fresh)) { last = fresh; return; }
